@@ -107,12 +107,12 @@ class _ActionButtons extends StatelessWidget {
               label: const Text('Push'),
             ),
           OutlinedButton.icon(
-            onPressed: () => context.push('/split/$id'),
+            onPressed: () => context.push('/split/$id/$source'),
             icon: const Icon(Icons.call_split),
             label: const Text('Split'),
           ),
           OutlinedButton.icon(
-            onPressed: () => context.push('/edit/$id'),
+            onPressed: () => context.push('/edit/$id/$source'),
             icon: const Icon(Icons.edit),
             label: const Text('Edit'),
           ),
