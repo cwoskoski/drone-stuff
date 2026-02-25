@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/home/home_screen.dart';
+import '../features/missions/detail/mission_detail_screen.dart';
+import '../features/missions/map/mission_map_screen.dart';
 
 final appRouter = GoRouter(
   routes: [
@@ -12,15 +14,18 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/detail/:id/:source',
       builder: (context, state) {
-        // Placeholder for DS-008
-        return Scaffold(
-          appBar: AppBar(title: const Text('Mission Detail')),
-          body: Center(
-            child: Text(
-              'Mission: ${state.pathParameters['id']}\n'
-              'Source: ${state.pathParameters['source']}',
-            ),
-          ),
+        return MissionDetailScreen(
+          id: state.pathParameters['id']!,
+          source: state.pathParameters['source']!,
+        );
+      },
+    ),
+    GoRoute(
+      path: '/map/:id/:source',
+      builder: (context, state) {
+        return MissionMapScreen(
+          id: state.pathParameters['id']!,
+          source: state.pathParameters['source']!,
         );
       },
     ),
