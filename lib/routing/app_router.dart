@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/home/home_screen.dart';
 import '../features/missions/detail/mission_detail_screen.dart';
 import '../features/missions/map/mission_map_screen.dart';
+import '../features/push/push_screen.dart';
 
 final appRouter = GoRouter(
   routes: [
@@ -32,9 +33,8 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/push/:id',
       builder: (context, state) {
-        return Scaffold(
-          appBar: AppBar(title: const Text('Push Mission')),
-          body: const Center(child: Text('Push — coming soon')),
+        return PushScreen(
+          localMissionId: state.pathParameters['id']!,
         );
       },
     ),
