@@ -32,7 +32,7 @@ final shizukuChannelProvider = Provider<ShizukuChannel>((ref) {
 });
 
 final shizukuStateProvider =
-    AutoDisposeFutureProvider<ShizukuState>((ref) async {
+    FutureProvider.autoDispose<ShizukuState>((ref) async {
   final channel = ref.watch(shizukuChannelProvider);
   return channel.getShizukuState();
 });
