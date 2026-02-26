@@ -43,8 +43,14 @@ class _SplitPreviewScreenState extends State<SplitPreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final segments =
-        computeSegments(widget.mission.waypoints.length, widget.config);
+    final segments = widget.config.maxFlightTime != null
+        ? computeSegmentsByTime(
+            widget.mission.waypoints,
+            widget.config.maxFlightTime!,
+            widget.config.overlap,
+            widget.config.segmentFinishActions,
+          )
+        : computeSegments(widget.mission.waypoints.length, widget.config);
     final allPoints = waypointsToLatLngs(widget.mission.waypoints);
     final camera = fitBounds(allPoints);
 

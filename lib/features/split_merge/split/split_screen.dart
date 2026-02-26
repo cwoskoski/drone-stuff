@@ -4,10 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/models/mission.dart';
 import '../../../core/models/mission_config.dart';
+import '../../../core/utils/flight_calculator.dart';
 import '../../edit/widgets/finish_action_selector.dart';
 import '../../missions/detail/mission_detail_provider.dart';
 import 'split_preview_screen.dart';
 import 'split_provider.dart';
+
+enum _SplitMode { byWaypoints, byFlightTime }
 
 class SplitScreen extends ConsumerStatefulWidget {
   final String missionId;
@@ -27,6 +30,8 @@ class _SplitScreenState extends ConsumerState<SplitScreen> {
   int _waypointsPerSegment = 150;
   int _overlap = 1;
   List<FinishAction>? _customFinishActions;
+  _SplitMode _splitMode = _SplitMode.byWaypoints;
+  int _maxFlightMinutes = 10;
 
   @override
   Widget build(BuildContext context) {
@@ -43,13 +48,44 @@ class _SplitScreenState extends ConsumerState<SplitScreen> {
     );
   }
 
-  Widget _buildContent(BuildContext context, Mission mission) {
-    final config = SplitConfig(
+  SplitConfig _buildConfig() {
+    if (_splitMode == _SplitMode.byFlightTime) {
+      return SplitConfig(
+        overlap: _overlap,
+        segmentFinishActions: _customFinishActions ?? [],
+        maxFlightTime: Duration(minutes: _maxFlightMinutes),
+      );
+    }
+    return SplitConfig(
       waypointsPerSegment: _waypointsPerSegment,
       overlap: _overlap,
       segmentFinishActions: _customFinishActions ?? [],
     );
-    final segments = computeSegments(mission.waypoints.length, config);
+  }
+
+  List<SplitSegmentInfo> _computeSegments(Mission mission) {
+    if (_splitMode == _SplitMode.byFlightTime) {
+      return computeSegmentsByTime(
+        mission.waypoints,
+        Duration(minutes: _maxFlightMinutes),
+        _overlap,
+        _customFinishActions ?? [],
+      );
+    }
+    return computeSegments(
+      mission.waypoints.length,
+      SplitConfig(
+        waypointsPerSegment: _waypointsPerSegment,
+        overlap: _overlap,
+        segmentFinishActions: _customFinishActions ?? [],
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, Mission mission) {
+    final config = _buildConfig();
+    final segments = _computeSegments(mission);
+    final totalFlight = estimateFlight(mission.waypoints);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -65,6 +101,11 @@ class _SplitScreenState extends ConsumerState<SplitScreen> {
                     style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 4),
                 Text('${mission.waypoints.length} waypoints'),
+                Text(
+                  '${formatDuration(totalFlight.flightTime)} est. flight time '
+                  '(${formatDistance(totalFlight.totalDistance)})',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
                 if (mission.author != null) Text('Author: ${mission.author}'),
               ],
             ),
@@ -72,21 +113,59 @@ class _SplitScreenState extends ConsumerState<SplitScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Waypoints per segment
-        Text('Waypoints per segment: $_waypointsPerSegment',
-            style: Theme.of(context).textTheme.titleSmall),
-        Slider(
-          value: _waypointsPerSegment.toDouble(),
-          min: 50,
-          max: mission.waypoints.length.toDouble().clamp(50, 500),
-          divisions:
-              ((mission.waypoints.length.clamp(50, 500) - 50) / 10).round(),
-          label: '$_waypointsPerSegment',
-          onChanged: (v) => setState(() {
-            _waypointsPerSegment = v.round();
+        // Split mode toggle
+        SegmentedButton<_SplitMode>(
+          segments: const [
+            ButtonSegment(
+              value: _SplitMode.byWaypoints,
+              label: Text('By Waypoints'),
+              icon: Icon(Icons.pin_drop),
+            ),
+            ButtonSegment(
+              value: _SplitMode.byFlightTime,
+              label: Text('By Flight Time'),
+              icon: Icon(Icons.timer),
+            ),
+          ],
+          selected: {_splitMode},
+          onSelectionChanged: (v) => setState(() {
+            _splitMode = v.first;
             _customFinishActions = null;
           }),
         ),
+        const SizedBox(height: 16),
+
+        // Mode-specific slider
+        if (_splitMode == _SplitMode.byWaypoints) ...[
+          Text('Waypoints per segment: $_waypointsPerSegment',
+              style: Theme.of(context).textTheme.titleSmall),
+          Slider(
+            value: _waypointsPerSegment.toDouble(),
+            min: 50,
+            max: mission.waypoints.length.toDouble().clamp(50, 500),
+            divisions:
+                ((mission.waypoints.length.clamp(50, 500) - 50) / 10).round(),
+            label: '$_waypointsPerSegment',
+            onChanged: (v) => setState(() {
+              _waypointsPerSegment = v.round();
+              _customFinishActions = null;
+            }),
+          ),
+        ] else ...[
+          Text('Max flight time: $_maxFlightMinutes min',
+              style: Theme.of(context).textTheme.titleSmall),
+          Slider(
+            value: _maxFlightMinutes.toDouble(),
+            min: 1,
+            max: 30,
+            divisions: 29,
+            label: '$_maxFlightMinutes min',
+            onChanged: (v) => setState(() {
+              _maxFlightMinutes = v.round();
+              _customFinishActions = null;
+            }),
+          ),
+        ],
         const SizedBox(height: 8),
 
         // Overlap
@@ -113,6 +192,9 @@ class _SplitScreenState extends ConsumerState<SplitScreen> {
           final i = entry.key;
           final seg = entry.value;
           final color = _segmentColor(i);
+          final segWaypoints = mission.waypoints
+              .sublist(seg.startIndex, seg.endIndex + 1);
+          final segFlight = estimateFlight(segWaypoints);
           return Card(
             margin: const EdgeInsets.only(bottom: 8),
             child: ListTile(
@@ -123,10 +205,15 @@ class _SplitScreenState extends ConsumerState<SplitScreen> {
               ),
               title: Text(
                   'WP ${seg.startIndex}–${seg.endIndex} (${seg.waypointCount} pts)'),
-              subtitle: Text(_finishActionLabel(seg.finishAction)),
+              subtitle: Text(
+                '${formatDuration(segFlight.flightTime)} · '
+                '${formatDistance(segFlight.totalDistance)} · '
+                '${_finishActionLabel(seg.finishAction)}',
+              ),
               trailing: IconButton(
                 icon: const Icon(Icons.edit, size: 18),
-                onPressed: () => _editSegmentAction(i, seg.finishAction),
+                onPressed: () =>
+                    _editSegmentAction(i, seg.finishAction, mission),
               ),
             ),
           );
@@ -162,7 +249,8 @@ class _SplitScreenState extends ConsumerState<SplitScreen> {
     );
   }
 
-  void _editSegmentAction(int index, FinishAction current) {
+  void _editSegmentAction(
+      int index, FinishAction current, Mission mission) {
     showDialog(
       context: context,
       builder: (ctx) {
@@ -183,16 +271,7 @@ class _SplitScreenState extends ConsumerState<SplitScreen> {
                 onPressed: () {
                   Navigator.pop(ctx);
                   setState(() {
-                    final segments = computeSegments(
-                      // We need the segment count for sizing the list
-                      // Recompute to get correct count
-                      1000, // dummy, we'll resize below
-                      SplitConfig(
-                        waypointsPerSegment: _waypointsPerSegment,
-                        overlap: _overlap,
-                      ),
-                    );
-                    // Initialize custom actions from defaults if needed
+                    final segments = _computeSegments(mission);
                     _customFinishActions ??=
                         segments.map((s) => s.finishAction).toList();
                     if (index < _customFinishActions!.length) {

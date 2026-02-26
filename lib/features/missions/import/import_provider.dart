@@ -17,6 +17,9 @@ class ImportNotifier extends AsyncNotifier<void> {
   Future<void> build() async {}
 
   Future<bool> importKmzFile() async {
+    // Capture ref before async gap — provider may be disposed while picker is open
+    final repo = ref.read(localMissionRepositoryProvider);
+
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['kmz'],
@@ -39,7 +42,6 @@ class ImportNotifier extends AsyncNotifier<void> {
     KmzParser.validate(bytes);
 
     // Store
-    final repo = ref.read(localMissionRepositoryProvider);
     await repo.importKmz(bytes, file.name);
 
     return true;

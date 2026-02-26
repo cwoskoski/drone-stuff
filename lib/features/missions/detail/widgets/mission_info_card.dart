@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/models/mission.dart';
 import '../../../../core/models/mission_config.dart';
+import '../../../../core/utils/flight_calculator.dart';
 
 class MissionInfoCard extends StatelessWidget {
   final Mission mission;
@@ -13,6 +14,7 @@ class MissionInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final config = mission.config;
     final theme = Theme.of(context);
+    final flight = estimateFlight(mission.waypoints);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -38,6 +40,14 @@ class MissionInfoCard extends StatelessWidget {
             _InfoRow(
               label: 'Waypoints',
               value: '${mission.waypoints.length}',
+            ),
+            _InfoRow(
+              label: 'Est. Flight Time',
+              value: formatDuration(flight.flightTime),
+            ),
+            _InfoRow(
+              label: 'Total Distance',
+              value: formatDistance(flight.totalDistance),
             ),
             _InfoRow(
               label: 'Finish Action',

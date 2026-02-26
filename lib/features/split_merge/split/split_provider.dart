@@ -7,6 +7,7 @@ import '../../../core/models/action_group.dart';
 import '../../../core/models/mission.dart';
 import '../../../core/models/mission_config.dart';
 import '../../../core/models/waypoint.dart';
+import '../../../core/utils/flight_calculator.dart';
 import '../../missions/local/local_mission_repository.dart';
 import '../../missions/local/local_missions_provider.dart';
 
@@ -14,11 +15,13 @@ class SplitConfig {
   final int waypointsPerSegment;
   final int overlap;
   final List<FinishAction> segmentFinishActions;
+  final Duration? maxFlightTime;
 
   const SplitConfig({
     this.waypointsPerSegment = 150,
     this.overlap = 1,
     this.segmentFinishActions = const [],
+    this.maxFlightTime,
   });
 }
 
@@ -72,9 +75,64 @@ List<SplitSegmentInfo> computeSegments(
   return segments;
 }
 
+/// Compute segment layout by maximum flight time per segment.
+List<SplitSegmentInfo> computeSegmentsByTime(
+  List<Waypoint> waypoints,
+  Duration maxTime,
+  int overlap,
+  List<FinishAction> customActions,
+) {
+  if (waypoints.isEmpty) return [];
+
+  final segments = <SplitSegmentInfo>[];
+  var start = 0;
+  var segIndex = 0;
+
+  while (start < waypoints.length) {
+    final remaining = waypoints.sublist(start);
+    var count = waypointsForMaxTime(remaining, maxTime);
+
+    // Ensure we don't exceed bounds
+    if (start + count > waypoints.length) {
+      count = waypoints.length - start;
+    }
+
+    final end = start + count;
+    final isLast = end >= waypoints.length;
+    final defaultAction =
+        isLast ? FinishAction.goHome : FinishAction.noAction;
+    final finishAction = segIndex < customActions.length
+        ? customActions[segIndex]
+        : defaultAction;
+
+    segments.add(SplitSegmentInfo(
+      startIndex: start,
+      endIndex: end - 1,
+      waypointCount: count,
+      finishAction: finishAction,
+    ));
+
+    if (isLast) break;
+
+    // Advance with overlap
+    final step = count - overlap;
+    start += step < 1 ? 1 : step;
+    segIndex++;
+  }
+
+  return segments;
+}
+
 /// Split a mission into segments, returning new Mission objects.
 List<Mission> splitMission(Mission source, SplitConfig config) {
-  final segments = computeSegments(source.waypoints.length, config);
+  final segments = config.maxFlightTime != null
+      ? computeSegmentsByTime(
+          source.waypoints,
+          config.maxFlightTime!,
+          config.overlap,
+          config.segmentFinishActions,
+        )
+      : computeSegments(source.waypoints.length, config);
   final results = <Mission>[];
 
   for (final seg in segments) {
