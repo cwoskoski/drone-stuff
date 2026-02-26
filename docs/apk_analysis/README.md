@@ -8,33 +8,6 @@ waypoint missions on the filesystem.
 Determine whether we can create new waypoint missions by writing files
 directly, or if DJI Fly maintains an internal database/registry.
 
-## What We Know
-
-### Filesystem layout
-```
-/sdcard/Android/data/dji.go.v5/files/waypoint/
-  {uuid}/
-    {uuid}.kmz          # primary KMZ file
-  kmzTemp/
-    {uuid}.kmz          # cached/temp copy
-  capability/
-    *.json              # drone capability files
-```
-
-### Observed behavior
-- Push provider writes KMZ to both `{uuid}/{uuid}.kmz` AND `kmzTemp/{uuid}.kmz`
-- DJI Fly lists missions by scanning UUID folders under `waypoint/`
-- UUID folders match pattern `[0-9a-f]{8}-[0-9a-f]{4}-...-[0-9a-f]{12}`
-
-### Open questions
-1. Does DJI Fly discover missions purely from filesystem, or does it use a
-   SQLite database / SharedPreferences / protobuf registry?
-2. What is `kmzTemp/` for — cache, staging area, or required for discovery?
-3. Are there any additional metadata files (manifest, index) needed?
-4. What happens if we create a new UUID folder with a valid KMZ — does the
-   app pick it up?
-5. Does the app validate KMZ signatures or checksums?
-
 ## Tools
 
 - **jadx** v1.5.5 — installed at `~/tools/jadx/bin/jadx`
@@ -46,27 +19,88 @@ directly, or if DJI Fly maintains an internal database/registry.
 2. Run: `bash extract_and_decompile.sh <device_serial>`
 3. Decompiled Java source lands in `decompiled/sources/`
 
-## Search Strategy
-
-Priority grep targets once decompiled:
-
-```bash
-# How does it find/list waypoint missions?
-grep -r 'waypoint' sources/ --include='*.java' -l | head -30
-grep -r 'kmzTemp' sources/ --include='*.java' -l
-grep -r 'WaypointMission' sources/ --include='*.java' -l
-
-# Does it use a database for mission tracking?
-grep -r 'waypoint.*database\|waypoint.*dao\|waypoint.*db' sources/ -il
-grep -r 'mission.*table\|mission.*entity' sources/ -il
-
-# SharedPreferences or config files?
-grep -r 'SharedPreferences.*waypoint\|waypoint.*pref' sources/ -il
-
-# File discovery / directory scanning
-grep -r 'listFiles.*waypoint\|waypoint.*list' sources/ --include='*.java' -l
-```
-
 ## Findings
 
-<!-- Document findings below as we analyze the decompiled code -->
+### Complete filesystem layout (from device inspection)
+
+```
+/sdcard/Android/data/dji.go.v5/files/waypoint/
+  {UUID}/
+    {UUID}.kmz                    # primary KMZ file (rw-rw-rw-)
+    image/
+      ShotSnap.json               # action snapshot metadata (rw-rw----)
+  kmzTemp/
+    {UUID}.kmz                    # copy of the KMZ (rw-rw----)
+  map_preview/
+    {UUID}/
+      {UUID}.jpg                  # map thumbnail screenshot (rw-rw----)
+  capability/
+    SPEEDCapability.json
+    GIMBAL_PITCHCapability.json
+    GIMBAL_ROLLCapability.json
+    LOST_ACTIONCapability.json
+    ZOOMCapability.json
+```
+
+### No database for waypoint tracking
+
+- Only database on external storage: `cache/diskcache/map_cache.db` (map tiles)
+- No SQLite, SharedPreferences, or registry file found for waypoint missions
+- Internal app data (`/data/data/dji.go.v5/`) is inaccessible (non-debuggable)
+  but the complete waypoint structure lives on external storage
+
+### Native library `libwpmz_jni.so` handles all KMZ logic
+
+The waypoint mission code lives in a C++ native library, not Java. Key symbols:
+
+```
+native_CheckWPMZValid          # validates KMZ structure
+native_GenerateKMZFile         # creates KMZ from mission data
+native_GetWaylineMission       # parses mission from KMZ
+native_GetWaylineMissionConfig # parses config from KMZ
+native_GetWaylineTemplates     # parses wayline templates
+native_GetWaylines             # extracts waylines
+native_GenerateWaylineTrajectory  # generates flight trajectory
+```
+
+Internal C++ namespaces: `uav::wpmz::*`, `kmldom::*`, `kmlengine::*`
+- Uses libkml for KML/KMZ parsing (open-source Google library)
+- Classes: `WaylineMission`, `WaylineWaypoint`, `WaylineMissionConfig`
+- Waypoint params: `YawParam`, `TurnParam`, `GimbalHeadingParam`
+
+### ShotSnap.json
+
+Empty action snapshot metadata for the mission:
+```json
+{"POI_POINT":{},"WAY_POINT":{}}
+```
+
+### Java layer is fully obfuscated
+
+- DJI package at `dji/p005go/p006v5/` contains only `R.java` (resources)
+- All business logic class names are scrambled
+- String literals are encrypted/loaded at runtime
+- The `System.loadLibrary("wpmz_jni")` call is in obfuscated code
+
+### Conclusions
+
+1. **No waypoint database exists on external storage.** Mission discovery is
+   almost certainly filesystem-based — scanning UUID folders under `waypoint/`.
+
+2. **Full mission folder structure has 3 parts:**
+   - `{UUID}/{UUID}.kmz` — the mission file itself
+   - `kmzTemp/{UUID}.kmz` — a duplicate (possibly for upload to drone)
+   - `map_preview/{UUID}/{UUID}.jpg` — thumbnail for the mission list
+
+3. **`image/ShotSnap.json`** is created inside the mission folder for action
+   metadata. Can be empty `{"POI_POINT":{},"WAY_POINT":{}}`.
+
+4. **The map preview JPG** is likely optional for discovery but needed for
+   the mission list to show a thumbnail. Missing = probably blank thumbnail.
+
+5. **To test creating a new mission**, we need:
+   - Generate a new UUID
+   - Write a valid KMZ to `{UUID}/{UUID}.kmz`
+   - Copy KMZ to `kmzTemp/{UUID}.kmz`
+   - Optionally: create `image/ShotSnap.json` and `map_preview/{UUID}/{UUID}.jpg`
+   - Open DJI Fly and check the waypoint mission list
