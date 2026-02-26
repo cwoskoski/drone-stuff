@@ -213,8 +213,8 @@ class _DeviceSlotCard extends ConsumerWidget {
 }
 
 final _allDeviceSlotsProvider =
-    FutureProvider.autoDispose<List<DeviceSlot>>((ref) {
-  return ref.watch(deviceSlotDaoProvider).getAll();
+    StreamProvider.autoDispose<List<DeviceSlot>>((ref) {
+  return ref.watch(deviceSlotDaoProvider).watchAll();
 });
 
 class _WaypointList extends StatelessWidget {

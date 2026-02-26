@@ -220,6 +220,7 @@ class SplitExecutor extends AsyncNotifier<SplitState> {
     required Mission source,
     required String parentId,
     required SplitConfig config,
+    String? parentFileName,
   }) async {
     try {
       state = const AsyncData(SplitState(
@@ -246,6 +247,7 @@ class SplitExecutor extends AsyncNotifier<SplitState> {
           segmentIndex: i,
           mission: segment,
           kmzBytes: kmzBytes,
+          parentFileName: parentFileName,
         );
 
         state = AsyncData(SplitState(

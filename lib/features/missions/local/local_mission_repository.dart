@@ -107,6 +107,7 @@ class LocalMissionRepository {
     required int segmentIndex,
     required models.Mission mission,
     required Uint8List kmzBytes,
+    String? parentFileName,
   }) async {
     final id = _uuid.v4();
     final relPath = 'missions/$id.kmz';
@@ -118,9 +119,15 @@ class LocalMissionRepository {
     }
     File(absPath).writeAsBytesSync(kmzBytes);
 
+    // Derive segment name from parent: "foo.kmz" → "foo_1.kmz"
+    final baseName = parentFileName != null
+        ? parentFileName.replaceAll(RegExp(r'\.kmz$', caseSensitive: false), '')
+        : 'segment';
+    final segFileName = '${baseName}_${segmentIndex + 1}.kmz';
+
     await _dao.insertMission(MissionsCompanion(
       id: Value(id),
-      fileName: Value('segment_$segmentIndex.kmz'),
+      fileName: Value(segFileName),
       author: Value(mission.author),
       createTime: Value(mission.createTime?.millisecondsSinceEpoch),
       waypointCount: Value(mission.waypoints.length),

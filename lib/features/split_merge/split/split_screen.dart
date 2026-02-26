@@ -37,13 +37,18 @@ class _SplitScreenState extends ConsumerState<SplitScreen> {
   Widget build(BuildContext context) {
     final missionAsync =
         ref.watch(missionDetailProvider((widget.missionId, widget.source)));
+    // Look up parent filename for naming split segments
+    final metaAsync = widget.source == 'local'
+        ? ref.watch(missionMetadataProvider(widget.missionId))
+        : null;
+    final parentFileName = metaAsync?.value?.mission.fileName;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Split Mission')),
       body: missionAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('Error: $error')),
-        data: (mission) => _buildContent(context, mission),
+        data: (mission) => _buildContent(context, mission, parentFileName),
       ),
     );
   }
@@ -82,7 +87,7 @@ class _SplitScreenState extends ConsumerState<SplitScreen> {
     );
   }
 
-  Widget _buildContent(BuildContext context, Mission mission) {
+  Widget _buildContent(BuildContext context, Mission mission, String? parentFileName) {
     final config = _buildConfig();
     final segments = _computeSegments(mission);
     final totalFlight = estimateFlight(mission.waypoints);
@@ -238,7 +243,7 @@ class _SplitScreenState extends ConsumerState<SplitScreen> {
 
         // Split button
         FilledButton.icon(
-          onPressed: () => _executeSplit(context, mission, config),
+          onPressed: () => _executeSplit(context, mission, config, parentFileName),
           icon: const Icon(Icons.call_split),
           label: const Text('Split Mission'),
           style: FilledButton.styleFrom(
@@ -289,7 +294,7 @@ class _SplitScreenState extends ConsumerState<SplitScreen> {
   }
 
   void _executeSplit(
-      BuildContext context, Mission mission, SplitConfig config) {
+      BuildContext context, Mission mission, SplitConfig config, String? parentFileName) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -297,6 +302,7 @@ class _SplitScreenState extends ConsumerState<SplitScreen> {
         mission: mission,
         parentId: widget.missionId,
         config: config,
+        parentFileName: parentFileName,
       ),
     );
   }
@@ -329,11 +335,13 @@ class _SplitProgressDialog extends ConsumerStatefulWidget {
   final Mission mission;
   final String parentId;
   final SplitConfig config;
+  final String? parentFileName;
 
   const _SplitProgressDialog({
     required this.mission,
     required this.parentId,
     required this.config,
+    this.parentFileName,
   });
 
   @override
@@ -350,6 +358,7 @@ class _SplitProgressDialogState extends ConsumerState<_SplitProgressDialog> {
             source: widget.mission,
             parentId: widget.parentId,
             config: widget.config,
+            parentFileName: widget.parentFileName,
           );
     });
   }

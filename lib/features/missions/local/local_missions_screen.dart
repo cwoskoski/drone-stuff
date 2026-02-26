@@ -234,8 +234,8 @@ class _LocalMissionCard extends StatelessWidget {
 }
 
 final _deviceSlotsProvider =
-    FutureProvider.autoDispose<List<DeviceSlot>>((ref) {
-  return ref.watch(deviceSlotDaoProvider).getAll();
+    StreamProvider.autoDispose<List<DeviceSlot>>((ref) {
+  return ref.watch(deviceSlotDaoProvider).watchAll();
 });
 
 class _SourceBadge extends StatelessWidget {
