@@ -16,6 +16,12 @@ class DeviceSlotDao extends DatabaseAccessor<AppDatabase>
         .watch();
   }
 
+  Future<List<DeviceSlot>> getAll() {
+    return (select(deviceSlots)
+          ..orderBy([(t) => OrderingTerm.asc(t.slotNumber)]))
+        .get();
+  }
+
   Future<DeviceSlot?> getByUuid(String uuid) {
     return (select(deviceSlots)..where((t) => t.uuid.equals(uuid)))
         .getSingleOrNull();

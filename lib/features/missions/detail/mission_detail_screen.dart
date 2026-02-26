@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/database/app_database.dart' show DeviceSlot;
+import '../../../core/database/providers.dart';
 import '../../../core/models/action_group.dart';
 import '../../../core/models/mission.dart';
 import '../../../core/models/waypoint.dart';
@@ -24,10 +26,12 @@ class MissionDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _displayTitle(),
-          style: const TextStyle(fontSize: 14, fontFamily: 'monospace'),
-        ),
+        title: source == 'device'
+            ? _DeviceSlotTitle(uuid: id)
+            : Text(
+                _displayTitle(),
+                style: const TextStyle(fontSize: 14, fontFamily: 'monospace'),
+              ),
       ),
       body: missionAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -289,3 +293,42 @@ class _ActionGroupsSection extends StatelessWidget {
     );
   }
 }
+
+class _DeviceSlotTitle extends ConsumerWidget {
+  final String uuid;
+
+  const _DeviceSlotTitle({required this.uuid});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final slotAsync = ref.watch(_deviceSlotProvider(uuid));
+    final displayUuid =
+        '${uuid.substring(0, 8)}...${uuid.substring(uuid.length - 4)}';
+
+    return slotAsync.when(
+      loading: () => Text(displayUuid,
+          style: const TextStyle(fontSize: 14, fontFamily: 'monospace')),
+      error: (_, __) => Text(displayUuid,
+          style: const TextStyle(fontSize: 14, fontFamily: 'monospace')),
+      data: (slot) {
+        final title = slot?.name ?? 'Slot ${slot?.slotNumber ?? "?"}';
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 16)),
+            Text(
+              'Slot ${slot?.slotNumber ?? "?"}  ·  $displayUuid',
+              style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+final _deviceSlotProvider = FutureProvider.autoDispose
+    .family<DeviceSlot?, String>((ref, uuid) {
+  final slotDao = ref.watch(deviceSlotDaoProvider);
+  return slotDao.getByUuid(uuid);
+});

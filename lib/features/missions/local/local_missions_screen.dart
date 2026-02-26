@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/database/providers.dart';
 import 'local_missions_provider.dart';
 
 class LocalMissionsScreen extends ConsumerWidget {
@@ -12,6 +13,17 @@ class LocalMissionsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final missionsAsync = ref.watch(localMissionsProvider);
+    final slotsAsync = ref.watch(_deviceSlotsProvider);
+
+    // Build a map of slot name → slot number for matching
+    final slotsByName = <String, int>{};
+    if (slotsAsync.hasValue) {
+      for (final slot in slotsAsync.value!) {
+        if (slot.name != null) {
+          slotsByName[slot.name!] = slot.slotNumber;
+        }
+      }
+    }
 
     return missionsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -48,14 +60,18 @@ class LocalMissionsScreen extends ConsumerWidget {
         return ListView.builder(
           padding: const EdgeInsets.only(bottom: 80),
           itemCount: missions.length,
-          itemBuilder: (context, index) => _LocalMissionCard(
-            mission: missions[index],
-            parentMission: missions[index].parentMissionId != null
-                ? missionMap[missions[index].parentMissionId]
-                : null,
-            onDelete: () =>
-                _deleteMission(context, ref, missions[index], missions),
-          ),
+          itemBuilder: (context, index) {
+            final m = missions[index];
+            return _LocalMissionCard(
+              mission: m,
+              parentMission: m.parentMissionId != null
+                  ? missionMap[m.parentMissionId]
+                  : null,
+              deviceSlotNumber: slotsByName[m.fileName],
+              onDelete: () =>
+                  _deleteMission(context, ref, m, missions),
+            );
+          },
         );
       },
     );
@@ -110,11 +126,13 @@ class LocalMissionsScreen extends ConsumerWidget {
 class _LocalMissionCard extends StatelessWidget {
   final Mission mission;
   final Mission? parentMission;
+  final int? deviceSlotNumber;
   final VoidCallback onDelete;
 
   const _LocalMissionCard({
     required this.mission,
     required this.parentMission,
+    this.deviceSlotNumber,
     required this.onDelete,
   });
 
@@ -151,6 +169,19 @@ class _LocalMissionCard extends StatelessWidget {
                 Text('${mission.waypointCount} waypoints'),
                 const Text('  ·  '),
                 _SourceBadge(sourceType: mission.sourceType),
+                if (deviceSlotNumber != null) ...[
+                  const Text('  ·  '),
+                  Icon(Icons.phone_android, size: 14, color: Colors.green[700]),
+                  const SizedBox(width: 2),
+                  Text(
+                    'Slot $deviceSlotNumber',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green[700],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
             ),
             Text(
@@ -201,6 +232,11 @@ class _LocalMissionCard extends StatelessWidget {
     }
   }
 }
+
+final _deviceSlotsProvider =
+    FutureProvider.autoDispose<List<DeviceSlot>>((ref) {
+  return ref.watch(deviceSlotDaoProvider).getAll();
+});
 
 class _SourceBadge extends StatelessWidget {
   final String sourceType;
