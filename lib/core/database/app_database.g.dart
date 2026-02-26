@@ -682,16 +682,331 @@ class MissionsCompanion extends UpdateCompanion<Mission> {
   }
 }
 
+class $DeviceSlotsTable extends DeviceSlots
+    with TableInfo<$DeviceSlotsTable, DeviceSlot> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DeviceSlotsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _uuidMeta = const VerificationMeta('uuid');
+  @override
+  late final GeneratedColumn<String> uuid = GeneratedColumn<String>(
+    'uuid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _slotNumberMeta = const VerificationMeta(
+    'slotNumber',
+  );
+  @override
+  late final GeneratedColumn<int> slotNumber = GeneratedColumn<int>(
+    'slot_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [uuid, name, slotNumber, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'device_slots';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DeviceSlot> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('uuid')) {
+      context.handle(
+        _uuidMeta,
+        uuid.isAcceptableOrUnknown(data['uuid']!, _uuidMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_uuidMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    }
+    if (data.containsKey('slot_number')) {
+      context.handle(
+        _slotNumberMeta,
+        slotNumber.isAcceptableOrUnknown(data['slot_number']!, _slotNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_slotNumberMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {uuid};
+  @override
+  DeviceSlot map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DeviceSlot(
+      uuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uuid'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      ),
+      slotNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}slot_number'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      ),
+    );
+  }
+
+  @override
+  $DeviceSlotsTable createAlias(String alias) {
+    return $DeviceSlotsTable(attachedDatabase, alias);
+  }
+}
+
+class DeviceSlot extends DataClass implements Insertable<DeviceSlot> {
+  final String uuid;
+  final String? name;
+  final int slotNumber;
+  final int? updatedAt;
+  const DeviceSlot({
+    required this.uuid,
+    this.name,
+    required this.slotNumber,
+    this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['uuid'] = Variable<String>(uuid);
+    if (!nullToAbsent || name != null) {
+      map['name'] = Variable<String>(name);
+    }
+    map['slot_number'] = Variable<int>(slotNumber);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<int>(updatedAt);
+    }
+    return map;
+  }
+
+  DeviceSlotsCompanion toCompanion(bool nullToAbsent) {
+    return DeviceSlotsCompanion(
+      uuid: Value(uuid),
+      name: name == null && nullToAbsent ? const Value.absent() : Value(name),
+      slotNumber: Value(slotNumber),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory DeviceSlot.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DeviceSlot(
+      uuid: serializer.fromJson<String>(json['uuid']),
+      name: serializer.fromJson<String?>(json['name']),
+      slotNumber: serializer.fromJson<int>(json['slotNumber']),
+      updatedAt: serializer.fromJson<int?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'uuid': serializer.toJson<String>(uuid),
+      'name': serializer.toJson<String?>(name),
+      'slotNumber': serializer.toJson<int>(slotNumber),
+      'updatedAt': serializer.toJson<int?>(updatedAt),
+    };
+  }
+
+  DeviceSlot copyWith({
+    String? uuid,
+    Value<String?> name = const Value.absent(),
+    int? slotNumber,
+    Value<int?> updatedAt = const Value.absent(),
+  }) => DeviceSlot(
+    uuid: uuid ?? this.uuid,
+    name: name.present ? name.value : this.name,
+    slotNumber: slotNumber ?? this.slotNumber,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+  );
+  DeviceSlot copyWithCompanion(DeviceSlotsCompanion data) {
+    return DeviceSlot(
+      uuid: data.uuid.present ? data.uuid.value : this.uuid,
+      name: data.name.present ? data.name.value : this.name,
+      slotNumber: data.slotNumber.present
+          ? data.slotNumber.value
+          : this.slotNumber,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeviceSlot(')
+          ..write('uuid: $uuid, ')
+          ..write('name: $name, ')
+          ..write('slotNumber: $slotNumber, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(uuid, name, slotNumber, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DeviceSlot &&
+          other.uuid == this.uuid &&
+          other.name == this.name &&
+          other.slotNumber == this.slotNumber &&
+          other.updatedAt == this.updatedAt);
+}
+
+class DeviceSlotsCompanion extends UpdateCompanion<DeviceSlot> {
+  final Value<String> uuid;
+  final Value<String?> name;
+  final Value<int> slotNumber;
+  final Value<int?> updatedAt;
+  final Value<int> rowid;
+  const DeviceSlotsCompanion({
+    this.uuid = const Value.absent(),
+    this.name = const Value.absent(),
+    this.slotNumber = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DeviceSlotsCompanion.insert({
+    required String uuid,
+    this.name = const Value.absent(),
+    required int slotNumber,
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : uuid = Value(uuid),
+       slotNumber = Value(slotNumber);
+  static Insertable<DeviceSlot> custom({
+    Expression<String>? uuid,
+    Expression<String>? name,
+    Expression<int>? slotNumber,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (uuid != null) 'uuid': uuid,
+      if (name != null) 'name': name,
+      if (slotNumber != null) 'slot_number': slotNumber,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DeviceSlotsCompanion copyWith({
+    Value<String>? uuid,
+    Value<String?>? name,
+    Value<int>? slotNumber,
+    Value<int?>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return DeviceSlotsCompanion(
+      uuid: uuid ?? this.uuid,
+      name: name ?? this.name,
+      slotNumber: slotNumber ?? this.slotNumber,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (uuid.present) {
+      map['uuid'] = Variable<String>(uuid.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (slotNumber.present) {
+      map['slot_number'] = Variable<int>(slotNumber.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeviceSlotsCompanion(')
+          ..write('uuid: $uuid, ')
+          ..write('name: $name, ')
+          ..write('slotNumber: $slotNumber, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $MissionsTable missions = $MissionsTable(this);
+  late final $DeviceSlotsTable deviceSlots = $DeviceSlotsTable(this);
   late final MissionDao missionDao = MissionDao(this as AppDatabase);
+  late final DeviceSlotDao deviceSlotDao = DeviceSlotDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [missions];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [missions, deviceSlots];
 }
 
 typedef $$MissionsTableCreateCompanionBuilder =
@@ -1016,10 +1331,195 @@ typedef $$MissionsTableProcessedTableManager =
       Mission,
       PrefetchHooks Function()
     >;
+typedef $$DeviceSlotsTableCreateCompanionBuilder =
+    DeviceSlotsCompanion Function({
+      required String uuid,
+      Value<String?> name,
+      required int slotNumber,
+      Value<int?> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$DeviceSlotsTableUpdateCompanionBuilder =
+    DeviceSlotsCompanion Function({
+      Value<String> uuid,
+      Value<String?> name,
+      Value<int> slotNumber,
+      Value<int?> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$DeviceSlotsTableFilterComposer
+    extends Composer<_$AppDatabase, $DeviceSlotsTable> {
+  $$DeviceSlotsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get uuid => $composableBuilder(
+    column: $table.uuid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get slotNumber => $composableBuilder(
+    column: $table.slotNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DeviceSlotsTableOrderingComposer
+    extends Composer<_$AppDatabase, $DeviceSlotsTable> {
+  $$DeviceSlotsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get uuid => $composableBuilder(
+    column: $table.uuid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get slotNumber => $composableBuilder(
+    column: $table.slotNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DeviceSlotsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DeviceSlotsTable> {
+  $$DeviceSlotsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get uuid =>
+      $composableBuilder(column: $table.uuid, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get slotNumber => $composableBuilder(
+    column: $table.slotNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$DeviceSlotsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DeviceSlotsTable,
+          DeviceSlot,
+          $$DeviceSlotsTableFilterComposer,
+          $$DeviceSlotsTableOrderingComposer,
+          $$DeviceSlotsTableAnnotationComposer,
+          $$DeviceSlotsTableCreateCompanionBuilder,
+          $$DeviceSlotsTableUpdateCompanionBuilder,
+          (
+            DeviceSlot,
+            BaseReferences<_$AppDatabase, $DeviceSlotsTable, DeviceSlot>,
+          ),
+          DeviceSlot,
+          PrefetchHooks Function()
+        > {
+  $$DeviceSlotsTableTableManager(_$AppDatabase db, $DeviceSlotsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DeviceSlotsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DeviceSlotsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DeviceSlotsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> uuid = const Value.absent(),
+                Value<String?> name = const Value.absent(),
+                Value<int> slotNumber = const Value.absent(),
+                Value<int?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DeviceSlotsCompanion(
+                uuid: uuid,
+                name: name,
+                slotNumber: slotNumber,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String uuid,
+                Value<String?> name = const Value.absent(),
+                required int slotNumber,
+                Value<int?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DeviceSlotsCompanion.insert(
+                uuid: uuid,
+                name: name,
+                slotNumber: slotNumber,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DeviceSlotsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DeviceSlotsTable,
+      DeviceSlot,
+      $$DeviceSlotsTableFilterComposer,
+      $$DeviceSlotsTableOrderingComposer,
+      $$DeviceSlotsTableAnnotationComposer,
+      $$DeviceSlotsTableCreateCompanionBuilder,
+      $$DeviceSlotsTableUpdateCompanionBuilder,
+      (
+        DeviceSlot,
+        BaseReferences<_$AppDatabase, $DeviceSlotsTable, DeviceSlot>,
+      ),
+      DeviceSlot,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
   $$MissionsTableTableManager get missions =>
       $$MissionsTableTableManager(_db, _db.missions);
+  $$DeviceSlotsTableTableManager get deviceSlots =>
+      $$DeviceSlotsTableTableManager(_db, _db.deviceSlots);
 }

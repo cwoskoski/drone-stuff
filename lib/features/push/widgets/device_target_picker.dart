@@ -53,6 +53,8 @@ class DeviceTargetPicker extends StatelessWidget {
         final uuid = mission.uuid;
         final displayUuid =
             '${uuid.substring(0, 8)}...${uuid.substring(uuid.length - 4)}';
+        final title = mission.name ?? 'Slot ${mission.slotNumber}';
+        final isEmpty = mission.waypointCount == 0;
 
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -65,32 +67,34 @@ class DeviceTargetPicker extends StatelessWidget {
             onChanged: (value) {
               if (value != null) onSelected(value);
             },
-            title: Text(
-              displayUuid,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-            ),
+            title: Text(title),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (mission.author != null)
-                  Text('Author: ${mission.author}'),
-                Row(
-                  children: [
-                    if (mission.waypointCount > 0)
-                      Text('${mission.waypointCount} waypoints'),
-                    if (mission.waypointCount > 0 && mission.kmzSizeBytes > 0)
-                      const Text('  ·  '),
-                    if (mission.kmzSizeBytes > 0)
-                      Text(_formatSize(mission.kmzSizeBytes)),
-                  ],
+                Text(
+                  'Slot ${mission.slotNumber}  ·  $displayUuid',
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
                 ),
+                if (isEmpty)
+                  Text('Empty slot',
+                      style: TextStyle(color: Colors.grey[500]))
+                else ...[
+                  Row(
+                    children: [
+                      Text('${mission.waypointCount} waypoints'),
+                      if (mission.kmzSizeBytes > 0) const Text('  ·  '),
+                      if (mission.kmzSizeBytes > 0)
+                        Text(_formatSize(mission.kmzSizeBytes)),
+                    ],
+                  ),
+                ],
                 if (mission.createTime != null)
                   Text(DateFormat.yMMMd()
                       .add_Hm()
                       .format(mission.createTime!)),
               ],
             ),
-            isThreeLine: mission.author != null,
+            isThreeLine: true,
           ),
         );
       },

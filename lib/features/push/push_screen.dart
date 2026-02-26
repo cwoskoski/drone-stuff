@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/models/device_mission.dart';
 import '../missions/device/device_missions_provider.dart';
 import '../missions/local/local_missions_provider.dart';
 import 'push_provider.dart';
@@ -99,19 +100,21 @@ class _PushScreenState extends ConsumerState<PushScreen> {
     );
   }
 
-  void _confirmAndPush(BuildContext context, AsyncValue deviceMissions) {
+  void _confirmAndPush(BuildContext context, AsyncValue<List<DeviceMission>> deviceMissions) {
     if (_selectedUuid == null) return;
 
     final targetUuid = _selectedUuid!;
-    final displayUuid =
-        '${targetUuid.substring(0, 8)}...${targetUuid.substring(targetUuid.length - 4)}';
+    // Find the target mission to get its display name
+    final missions = deviceMissions.value ?? [];
+    final target = missions.where((m) => m.uuid == targetUuid).firstOrNull;
+    final targetLabel = target?.name ?? 'Slot ${target?.slotNumber ?? "?"}';
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirm Push'),
         content: Text(
-          'Replace device mission $displayUuid with local mission?',
+          'Push to "$targetLabel"?',
         ),
         actions: [
           TextButton(

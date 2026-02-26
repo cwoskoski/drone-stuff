@@ -1,11 +1,14 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/constants.dart';
+import '../../core/database/app_database.dart';
+import '../../core/database/providers.dart';
 import '../../core/platform/shizuku_channel.dart';
 import '../../core/platform/shizuku_state.dart';
 import '../missions/local/local_missions_provider.dart';
@@ -61,6 +64,7 @@ class PushNotifier extends AsyncNotifier<PushState> {
     final channel = ref.read(shizukuChannelProvider);
     final repo = ref.read(localMissionRepositoryProvider);
     final documentsPath = ref.read(documentsPathProvider);
+    final slotDao = ref.read(deviceSlotDaoProvider);
 
     try {
       // Load local mission KMZ bytes
@@ -73,6 +77,7 @@ class PushNotifier extends AsyncNotifier<PushState> {
         return;
       }
       final Uint8List bytes = result.bytes;
+      final sourceFileName = result.metadata.fileName;
 
       final devicePrimary = '$waypointRoot/$targetUuid/$targetUuid.kmz';
       final deviceTemp = '$waypointRoot/kmzTemp/$targetUuid.kmz';
@@ -139,6 +144,15 @@ class PushNotifier extends AsyncNotifier<PushState> {
         ));
         return;
       }
+
+      // Auto-name the slot from the source file
+      final existingSlot = await slotDao.getByUuid(targetUuid);
+      await slotDao.upsertSlot(DeviceSlotsCompanion(
+        uuid: Value(targetUuid),
+        name: Value(sourceFileName),
+        slotNumber: Value(existingSlot?.slotNumber ?? 0),
+        updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+      ));
 
       state = AsyncData(PushState(
         step: PushStep.success,

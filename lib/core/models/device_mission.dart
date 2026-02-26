@@ -7,6 +7,8 @@ class DeviceMission {
   final DateTime? createTime;
   final int waypointCount;
   final FinishAction? finishAction;
+  final int slotNumber;
+  final String? name;
 
   const DeviceMission({
     required this.uuid,
@@ -15,5 +17,7 @@ class DeviceMission {
     this.createTime,
     this.waypointCount = 0,
     this.finishAction,
+    this.slotNumber = 0,
+    this.name,
   });
 }
