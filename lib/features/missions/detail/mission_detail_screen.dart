@@ -78,6 +78,7 @@ class MissionDetailScreen extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 24),
       children: [
         if (source == 'local') _LineageCard(id: id),
+        if (source == 'local') _DeviceSlotCard(missionId: id),
         MissionInfoCard(mission: mission),
         _ActionButtons(id: id, source: source),
         _WaypointList(waypoints: mission.waypoints),
@@ -166,6 +167,55 @@ class _LineageCard extends ConsumerWidget {
     );
   }
 }
+
+class _DeviceSlotCard extends ConsumerWidget {
+  final String missionId;
+
+  const _DeviceSlotCard({required this.missionId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final metaAsync = ref.watch(missionMetadataProvider(missionId));
+    final slotsAsync = ref.watch(_allDeviceSlotsProvider);
+
+    return metaAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (meta) {
+        if (meta == null) return const SizedBox.shrink();
+        final fileName = meta.mission.fileName;
+
+        return slotsAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (slots) {
+            final match = slots
+                .where((s) => s.name == fileName)
+                .firstOrNull;
+            if (match == null) return const SizedBox.shrink();
+
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              color: Colors.green.shade50,
+              child: ListTile(
+                leading: Icon(Icons.phone_android, color: Colors.green[700]),
+                title: Text(
+                  'Pushed to Slot ${match.slotNumber}',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+final _allDeviceSlotsProvider =
+    FutureProvider.autoDispose<List<DeviceSlot>>((ref) {
+  return ref.watch(deviceSlotDaoProvider).getAll();
+});
 
 class _WaypointList extends StatelessWidget {
   final List<Waypoint> waypoints;
