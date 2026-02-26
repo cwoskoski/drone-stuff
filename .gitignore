@@ -50,3 +50,7 @@ app.*.map.json
 
 # Waypoint KMZ backups
 tools/backups/*.kmz
+
+# APK analysis (large decompiled output)
+docs/apk_analysis/apks/
+docs/apk_analysis/decompiled/
