@@ -136,6 +136,78 @@ void main() {
     });
   });
 
+  group('deleteMissionWithSegments', () {
+    test('deletes parent and all child segment DB rows and files', () async {
+      final parentBytes = _loadFixture('havasu_lake_desert.kmz');
+      final parentId = await repo.importKmz(parentBytes, 'parent.kmz');
+
+      final segIds = <String>[];
+      for (var i = 1; i <= 3; i++) {
+        final segBytes = _loadFixture('havasu_lake_desert_$i.kmz');
+        final segMission = KmzParser.parseBytes(segBytes);
+        final segId = await repo.saveSplitSegment(
+          parentId: parentId,
+          segmentIndex: i,
+          mission: segMission,
+          kmzBytes: segBytes,
+        );
+        segIds.add(segId);
+      }
+
+      // Verify all files exist
+      expect(File('${tmpDir.path}/missions/$parentId.kmz').existsSync(), true);
+      for (final segId in segIds) {
+        expect(File('${tmpDir.path}/missions/$segId.kmz').existsSync(), true);
+      }
+
+      await repo.deleteMissionWithSegments(parentId);
+
+      // Parent gone
+      expect(await dao.getMissionById(parentId), isNull);
+      expect(File('${tmpDir.path}/missions/$parentId.kmz').existsSync(), false);
+
+      // All segments gone
+      for (final segId in segIds) {
+        expect(await dao.getMissionById(segId), isNull);
+        expect(
+            File('${tmpDir.path}/missions/$segId.kmz').existsSync(), false);
+      }
+    });
+
+    test('works when parent has no children', () async {
+      final bytes = _loadFixture('havasu_lake_desert.kmz');
+      final id = await repo.importKmz(bytes, 'standalone.kmz');
+
+      await repo.deleteMissionWithSegments(id);
+
+      expect(await dao.getMissionById(id), isNull);
+      expect(File('${tmpDir.path}/missions/$id.kmz').existsSync(), false);
+    });
+  });
+
+  group('getSegmentsList', () {
+    test('returns segments as a Future list', () async {
+      final parentBytes = _loadFixture('havasu_lake_desert.kmz');
+      final parentId = await repo.importKmz(parentBytes, 'parent.kmz');
+
+      for (var i = 1; i <= 2; i++) {
+        final segBytes = _loadFixture('havasu_lake_desert_$i.kmz');
+        final segMission = KmzParser.parseBytes(segBytes);
+        await repo.saveSplitSegment(
+          parentId: parentId,
+          segmentIndex: i,
+          mission: segMission,
+          kmzBytes: segBytes,
+        );
+      }
+
+      final segments = await repo.getSegmentsList(parentId);
+      expect(segments.length, 2);
+      expect(segments[0].segmentIndex, 1);
+      expect(segments[1].segmentIndex, 2);
+    });
+  });
+
   group('watchSegments', () {
     test('returns segments ordered by segment index', () async {
       final parentBytes = _loadFixture('havasu_lake_desert.kmz');

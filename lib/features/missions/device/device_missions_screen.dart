@@ -97,13 +97,13 @@ class DeviceMissionsScreen extends ConsumerWidget {
   }
 }
 
-class _MissionCard extends StatelessWidget {
+class _MissionCard extends ConsumerWidget {
   final DeviceMission mission;
 
   const _MissionCard({required this.mission});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final uuid = mission.uuid;
     final displayUuid =
         '${uuid.substring(0, 8)}...${uuid.substring(uuid.length - 4)}';
@@ -112,12 +112,12 @@ class _MissionCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: ListTile(
         leading: const CircleAvatar(child: Icon(Icons.flight_takeoff)),
-        title: Text(displayUuid, style: const TextStyle(fontFamily: 'monospace')),
+        title: Text(displayUuid,
+            style: const TextStyle(fontFamily: 'monospace')),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (mission.author != null)
-              Text('Author: ${mission.author}'),
+            if (mission.author != null) Text('Author: ${mission.author}'),
             Row(
               children: [
                 if (mission.waypointCount > 0)
@@ -134,8 +134,60 @@ class _MissionCard extends StatelessWidget {
         ),
         isThreeLine: true,
         onTap: () => context.push('/detail/${mission.uuid}/device'),
+        onLongPress: () => _showContextMenu(context, ref),
       ),
     );
+  }
+
+  void _showContextMenu(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title:
+                  const Text('Remove', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                _confirmDelete(context, ref);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final uuid = mission.uuid;
+    final displayUuid =
+        '${uuid.substring(0, 8)}...${uuid.substring(uuid.length - 4)}';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete mission?'),
+        content:
+            Text('Remove mission "$displayUuid" from the device?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ref.read(deviceMissionsProvider.notifier).deleteMission(uuid);
+    }
   }
 
   String _formatSize(int bytes) {

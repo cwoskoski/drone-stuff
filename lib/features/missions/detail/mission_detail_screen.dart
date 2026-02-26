@@ -32,7 +32,7 @@ class MissionDetailScreen extends ConsumerWidget {
       body: missionAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _buildError(context, error),
-        data: (mission) => _buildContent(context, mission),
+        data: (mission) => _buildContent(context, ref, mission),
       ),
     );
   }
@@ -69,10 +69,11 @@ class MissionDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, Mission mission) {
+  Widget _buildContent(BuildContext context, WidgetRef ref, Mission mission) {
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
+        if (source == 'local') _LineageCard(id: id),
         MissionInfoCard(mission: mission),
         _ActionButtons(id: id, source: source),
         _WaypointList(waypoints: mission.waypoints),
@@ -118,6 +119,46 @@ class _ActionButtons extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _LineageCard extends ConsumerWidget {
+  final String id;
+
+  const _LineageCard({required this.id});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final metaAsync = ref.watch(missionMetadataProvider(id));
+
+    return metaAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (meta) {
+        if (meta == null) return const SizedBox.shrink();
+        final row = meta.mission;
+        if (row.sourceType != 'split' || row.parentMissionId == null) {
+          return const SizedBox.shrink();
+        }
+
+        final parentName = meta.parent?.fileName ?? 'Unknown';
+        final segLabel = row.segmentIndex != null
+            ? 'Segment ${row.segmentIndex} of $parentName'
+            : 'Split from $parentName';
+
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          color: Colors.orange.shade50,
+          child: ListTile(
+            leading: const Icon(Icons.account_tree, color: Colors.orange),
+            title: Text(segLabel, style: const TextStyle(fontSize: 14)),
+            trailing: const Icon(Icons.chevron_right, size: 20),
+            onTap: () =>
+                context.push('/detail/${row.parentMissionId}/local'),
+          ),
+        );
+      },
     );
   }
 }

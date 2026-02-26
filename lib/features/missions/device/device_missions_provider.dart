@@ -54,4 +54,19 @@ class DeviceMissionsNotifier extends AsyncNotifier<List<DeviceMission>> {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() => _loadMissions());
   }
+
+  Future<void> deleteMission(String uuid) async {
+    final channel = ref.read(shizukuChannelProvider);
+    final missionDir = '$waypointRoot/$uuid';
+
+    // Delete all files in the mission folder
+    final files = await channel.listFiles(missionDir);
+    for (final file in files) {
+      await channel.deleteFile('$missionDir/$file');
+    }
+    // Delete the folder itself
+    await channel.deleteFile(missionDir);
+
+    await refresh();
+  }
 }

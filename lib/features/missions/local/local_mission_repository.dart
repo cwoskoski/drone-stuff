@@ -79,6 +79,28 @@ class LocalMissionRepository {
     await _dao.deleteMission(id);
   }
 
+  /// Delete a mission and all its child segments from DB and filesystem.
+  Future<void> deleteMissionWithSegments(String id) async {
+    // Delete child segment files first
+    final segments = await _dao.getSegmentsList(id);
+    for (final seg in segments) {
+      final absPath = p.join(_documentsPath, seg.filePath);
+      final file = File(absPath);
+      if (file.existsSync()) {
+        file.deleteSync();
+      }
+    }
+    await _dao.deleteSegments(id);
+
+    // Then delete the parent itself
+    await deleteMission(id);
+  }
+
+  /// Get segments list for a parent (non-stream, for UI queries).
+  Future<List<Mission>> getSegmentsList(String parentId) {
+    return _dao.getSegmentsList(parentId);
+  }
+
   /// Save a split segment linked to a parent mission.
   Future<String> saveSplitSegment({
     required String parentId,

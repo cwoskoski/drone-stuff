@@ -34,4 +34,17 @@ class MissionDao extends DatabaseAccessor<AppDatabase> with _$MissionDaoMixin {
           ..orderBy([(t) => OrderingTerm.asc(t.segmentIndex)]))
         .watch();
   }
+
+  Future<List<Mission>> getSegmentsList(String parentId) {
+    return (select(missions)
+          ..where((t) => t.parentMissionId.equals(parentId))
+          ..orderBy([(t) => OrderingTerm.asc(t.segmentIndex)]))
+        .get();
+  }
+
+  Future<void> deleteSegments(String parentId) {
+    return (delete(missions)
+          ..where((t) => t.parentMissionId.equals(parentId)))
+        .go();
+  }
 }
