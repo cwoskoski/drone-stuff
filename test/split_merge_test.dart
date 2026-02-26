@@ -46,8 +46,8 @@ void main() {
         const SplitConfig(waypointsPerSegment: 150, overlap: 1),
       );
 
-      expect(segments[0].finishAction, FinishAction.noAction);
-      expect(segments[1].finishAction, FinishAction.noAction);
+      expect(segments[0].finishAction, FinishAction.goHome);
+      expect(segments[1].finishAction, FinishAction.goHome);
       expect(segments[2].finishAction, FinishAction.goHome);
     });
 
@@ -148,8 +148,8 @@ void main() {
         const SplitConfig(waypointsPerSegment: 150, overlap: 1),
       );
 
-      expect(segments[0].config.finishAction, FinishAction.noAction);
-      expect(segments[1].config.finishAction, FinishAction.noAction);
+      expect(segments[0].config.finishAction, FinishAction.goHome);
+      expect(segments[1].config.finishAction, FinishAction.goHome);
       expect(segments[2].config.finishAction, FinishAction.goHome);
     });
 

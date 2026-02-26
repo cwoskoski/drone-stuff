@@ -53,12 +53,9 @@ List<SplitSegmentInfo> computeSegments(
     var end = start + config.waypointsPerSegment;
     if (end > totalWaypoints) end = totalWaypoints;
 
-    final isLast = end >= totalWaypoints;
-    final defaultAction =
-        isLast ? FinishAction.goHome : FinishAction.noAction;
     final finishAction = segIndex < config.segmentFinishActions.length
         ? config.segmentFinishActions[segIndex]
-        : defaultAction;
+        : FinishAction.goHome;
 
     segments.add(SplitSegmentInfo(
       startIndex: start,
@@ -99,11 +96,9 @@ List<SplitSegmentInfo> computeSegmentsByTime(
 
     final end = start + count;
     final isLast = end >= waypoints.length;
-    final defaultAction =
-        isLast ? FinishAction.goHome : FinishAction.noAction;
     final finishAction = segIndex < customActions.length
         ? customActions[segIndex]
-        : defaultAction;
+        : FinishAction.goHome;
 
     segments.add(SplitSegmentInfo(
       startIndex: start,
@@ -143,7 +138,13 @@ List<Mission> splitMission(Mission source, SplitConfig config) {
     final reindexed = <Waypoint>[];
     for (var i = 0; i < sourceWaypoints.length; i++) {
       final wp = sourceWaypoints[i];
-      final remappedGroups = wp.actionGroups.map((g) {
+      final segLength = sourceWaypoints.length;
+      // Drop action groups that span beyond either segment boundary
+      final remappedGroups = wp.actionGroups
+          .where((g) =>
+              g.startIndex - seg.startIndex >= 0 &&
+              g.endIndex - seg.startIndex < segLength)
+          .map((g) {
         return ActionGroup(
           groupId: g.groupId,
           startIndex: g.startIndex - seg.startIndex,

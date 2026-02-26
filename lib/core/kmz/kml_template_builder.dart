@@ -30,7 +30,7 @@ String buildTemplate(Mission mission) {
         _wpmlEl(builder, 'exitOnRCLost', config.exitOnRCLost);
         _wpmlEl(builder, 'executeRCLostAction', config.executeRCLostAction);
         _wpmlEl(builder, 'globalTransitionalSpeed',
-            config.globalTransitionalSpeed.toString());
+            _fmtNum(config.globalTransitionalSpeed));
         builder.element('droneInfo', namespace: _wpmlNs, nest: () {
           _wpmlEl(
               builder, 'droneEnumValue', config.droneEnumValue.toString());
@@ -46,4 +46,10 @@ String buildTemplate(Mission mission) {
 
 void _wpmlEl(XmlBuilder builder, String name, String text) {
   builder.element(name, namespace: _wpmlNs, nest: text);
+}
+
+String _fmtNum(num value) {
+  if (value is int) return value.toString();
+  final d = value as double;
+  return d == d.roundToDouble() ? d.toInt().toString() : d.toString();
 }

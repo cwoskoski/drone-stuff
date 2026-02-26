@@ -23,7 +23,7 @@ String buildWaylines(Mission mission) {
         _wpmlEl(builder, 'exitOnRCLost', config.exitOnRCLost);
         _wpmlEl(builder, 'executeRCLostAction', config.executeRCLostAction);
         _wpmlEl(builder, 'globalTransitionalSpeed',
-            config.globalTransitionalSpeed.toString());
+            _fmtNum(config.globalTransitionalSpeed));
         builder.element('droneInfo', namespace: _wpmlNs, nest: () {
           _wpmlEl(
               builder, 'droneEnumValue', config.droneEnumValue.toString());
@@ -41,7 +41,7 @@ String buildWaylines(Mission mission) {
         _wpmlEl(builder, 'duration', '0');
         _wpmlEl(builder, 'autoFlightSpeed',
             mission.waypoints.isNotEmpty
-                ? mission.waypoints.first.waypointSpeed.toString()
+                ? _fmtNum(mission.waypoints.first.waypointSpeed)
                 : '8');
 
         for (final wp in mission.waypoints) {
@@ -61,14 +61,14 @@ void _buildPlacemark(XmlBuilder builder, Waypoint wp) {
           nest: '${wp.longitude},${wp.latitude}');
     });
     _wpmlEl(builder, 'index', wp.index.toString());
-    _wpmlEl(builder, 'executeHeight', wp.executeHeight.toString());
-    _wpmlEl(builder, 'waypointSpeed', wp.waypointSpeed.toString());
+    _wpmlEl(builder, 'executeHeight', _fmtNum(wp.executeHeight));
+    _wpmlEl(builder, 'waypointSpeed', _fmtNum(wp.waypointSpeed));
 
     // Heading params
     builder.element('waypointHeadingParam', namespace: _wpmlNs, nest: () {
       _wpmlEl(builder, 'waypointHeadingMode', wp.heading.mode);
       _wpmlEl(
-          builder, 'waypointHeadingAngle', wp.heading.angle.toString());
+          builder, 'waypointHeadingAngle', _fmtNum(wp.heading.angle));
       _wpmlEl(builder, 'waypointPoiPoint', wp.heading.poiPoint);
       _wpmlEl(builder, 'waypointHeadingAngleEnable',
           wp.heading.angleEnabled ? '1' : '0');
@@ -81,7 +81,7 @@ void _buildPlacemark(XmlBuilder builder, Waypoint wp) {
     builder.element('waypointTurnParam', namespace: _wpmlNs, nest: () {
       _wpmlEl(builder, 'waypointTurnMode', wp.turn.mode);
       _wpmlEl(builder, 'waypointTurnDampingDist',
-          wp.turn.dampingDist.toString());
+          _fmtNum(wp.turn.dampingDist));
     });
 
     _wpmlEl(builder, 'useStraightLine', wp.useStraightLine ? '1' : '0');
@@ -96,9 +96,9 @@ void _buildPlacemark(XmlBuilder builder, Waypoint wp) {
       builder.element('waypointGimbalHeadingParam', namespace: _wpmlNs,
           nest: () {
         _wpmlEl(builder, 'waypointGimbalPitchAngle',
-            wp.gimbalHeading!.pitchAngle.toString());
+            _fmtNum(wp.gimbalHeading!.pitchAngle));
         _wpmlEl(builder, 'waypointGimbalYawAngle',
-            wp.gimbalHeading!.yawAngle.toString());
+            _fmtNum(wp.gimbalHeading!.yawAngle));
       });
     }
   });
@@ -133,4 +133,12 @@ void _buildActionGroup(
 
 void _wpmlEl(XmlBuilder builder, String name, String text) {
   builder.element(name, namespace: _wpmlNs, nest: text);
+}
+
+/// Format a number so whole values omit the trailing ".0".
+/// DJI's native parser (libwpmz_jni.so) rejects "10.0" where it expects "10".
+String _fmtNum(num value) {
+  if (value is int) return value.toString();
+  final d = value as double;
+  return d == d.roundToDouble() ? d.toInt().toString() : d.toString();
 }
