@@ -51,7 +51,7 @@ class MissionInfoCard extends StatelessWidget {
             ),
             _InfoRow(
               label: 'Finish Action',
-              child: _FinishActionChip(action: config.finishAction),
+              value: config.finishAction.displayName,
             ),
             _InfoRow(
               label: 'Fly-to Mode',
@@ -107,26 +107,3 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _FinishActionChip extends StatelessWidget {
-  final FinishAction action;
-
-  const _FinishActionChip({required this.action});
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, color) = switch (action) {
-      FinishAction.goHome => ('Go Home', Colors.green),
-      FinishAction.noAction => ('No Action', Colors.amber),
-      FinishAction.autoLand => ('Auto Land', Colors.blue),
-      FinishAction.backToFirstWaypoint => ('Back to First', Colors.orange),
-    };
-
-    return Chip(
-      label: Text(label, style: const TextStyle(fontSize: 12)),
-      backgroundColor: color.withAlpha(50),
-      side: BorderSide(color: color, width: 0.5),
-      visualDensity: VisualDensity.compact,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    );
-  }
-}

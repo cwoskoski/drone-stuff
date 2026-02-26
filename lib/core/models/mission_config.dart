@@ -4,6 +4,13 @@ enum FinishAction {
   autoLand,
   backToFirstWaypoint;
 
+  String get displayName => switch (this) {
+        goHome => 'Go Home',
+        noAction => 'No Action',
+        autoLand => 'Auto Land',
+        backToFirstWaypoint => 'Back to First',
+      };
+
   static FinishAction fromString(String? value) {
     switch (value) {
       case 'goHome':
