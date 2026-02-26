@@ -1,22 +1,11 @@
-import 'dart:io';
-
-import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
+import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import 'app_database.dart';
 import 'daos/mission_dao.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
-  final db = AppDatabase(
-    LazyDatabase(() async {
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File(p.join(dir.path, 'drone_stuff.db'));
-      return NativeDatabase.createInBackground(file);
-    }),
-  );
+  final db = AppDatabase(driftDatabase(name: 'drone_stuff'));
   ref.onDispose(() => db.close());
   return db;
 });

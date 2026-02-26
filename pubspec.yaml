@@ -15,7 +15,7 @@ dependencies:
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
   drift: ^2.31.0
-  sqlite3_flutter_libs: ^0.6.0+eol
+  drift_flutter: ^0.2.8
   xml: ^6.6.1
   archive: ^4.0.9
   file_picker: ^10.3.10

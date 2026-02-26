@@ -1,4 +1,5 @@
 const waypointRoot = '/sdcard/Android/data/dji.go.v5/files/waypoint';
+const capabilityDir = '$waypointRoot/capability';
 
 final uuidPattern = RegExp(
   r'^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-'
